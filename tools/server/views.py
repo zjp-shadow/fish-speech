@@ -97,57 +97,58 @@ async def vqgan_decode(req: Annotated[ServeVQGANDecodeRequest, Body(exclusive=Tr
 async def tts(req: Annotated[ServeTTSRequest, Body(exclusive=True)]):
     # Get the model from the app
     app_state = request.app.state
-    model_manager: ModelManager = app_state.model_manager
-    engine = model_manager.tts_inference_engine
-    sample_rate = engine.decoder_model.sample_rate
-    
-    # If no references are provided and no reference_id is set, use the default reference
-    if not req.references and req.reference_id is None:
-        try:
-            # Use the default audio example from client
-            default_reference = AudioExample.load_from_path()
-            req.references = [default_reference]
-            logger.info("Using default reference audio and text")
-        except Exception as e:
-            logger.warning(f"Failed to load default reference: {e}")
+    async with app_state.tts_lock:
+        model_manager: ModelManager = app_state.model_manager
+        engine = model_manager.tts_inference_engine
+        sample_rate = engine.decoder_model.sample_rate
+        
+        # If no references are provided and no reference_id is set, use the default reference
+        if not req.references and req.reference_id is None:
+            try:
+                # Use the default audio example from client
+                default_reference = AudioExample.load_from_path()
+                req.references = [default_reference]
+                logger.info("Using default reference audio and text")
+            except Exception as e:
+                logger.warning(f"Failed to load default reference: {e}")
 
-    # Check if the text is too long
-    if app_state.max_text_length > 0 and len(req.text) > app_state.max_text_length:
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST,
-            content=f"Text is too long, max length is {app_state.max_text_length}",
-        )
+        # Check if the text is too long
+        if app_state.max_text_length > 0 and len(req.text) > app_state.max_text_length:
+            raise HTTPException(
+                HTTPStatus.BAD_REQUEST,
+                content=f"Text is too long, max length is {app_state.max_text_length}",
+            )
 
-    # Check if streaming is enabled
-    if req.streaming and req.format != "wav":
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST,
-            content="Streaming only supports WAV format",
-        )
+        # Check if streaming is enabled
+        if req.streaming and req.format != "wav":
+            raise HTTPException(
+                HTTPStatus.BAD_REQUEST,
+                content="Streaming only supports WAV format",
+            )
 
-    # Perform TTS
-    if req.streaming:
-        return StreamResponse(
-            iterable=inference_async(req, engine),
-            headers={
-                "Content-Disposition": f"attachment; filename=audio.{req.format}",
-            },
-            content_type=get_content_type(req.format),
-        )
-    else:
-        fake_audios = next(inference(req, engine))
-        buffer = io.BytesIO()
-        sf.write(
-            buffer,
-            fake_audios,
-            sample_rate,
-            format=req.format,
-        )
+        # Perform TTS
+        if req.streaming:
+            return StreamResponse(
+                iterable=inference_async(req, engine),
+                headers={
+                    "Content-Disposition": f"attachment; filename=audio.{req.format}",
+                },
+                content_type=get_content_type(req.format),
+            )
+        else:
+            fake_audios = next(inference(req, engine))
+            buffer = io.BytesIO()
+            sf.write(
+                buffer,
+                fake_audios,
+                sample_rate,
+                format=req.format,
+            )
 
-        return StreamResponse(
-            iterable=buffer_to_async_generator(buffer.getvalue()),
-            headers={
-                "Content-Disposition": f"attachment; filename=audio.{req.format}",
-            },
-            content_type=get_content_type(req.format),
-        )
+            return StreamResponse(
+                iterable=buffer_to_async_generator(buffer.getvalue()),
+                headers={
+                    "Content-Disposition": f"attachment; filename=audio.{req.format}",
+                },
+                content_type=get_content_type(req.format),
+            )
