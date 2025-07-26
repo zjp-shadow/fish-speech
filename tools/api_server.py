@@ -1,6 +1,7 @@
 import re
 from threading import Lock
 
+import asyncio
 import pyrootutils
 import uvicorn
 from kui.asgi import (
@@ -72,6 +73,7 @@ class API(ExceptionHandler):
 
         # Add the state variables
         self.app.state.lock = Lock()
+        self.app.state.tts_lock = asyncio.Lock()
         self.app.state.device = self.args.device
         self.app.state.max_text_length = self.args.max_text_length
 

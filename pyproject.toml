@@ -1,3 +1,4 @@
+pythonVersion = "3.11"
 [project]
 name = "fish-speech"
 version = "0.1.0"
