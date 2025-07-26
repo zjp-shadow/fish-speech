@@ -41,7 +41,7 @@ def parse_args():
         "-ra",
         type=str,
         nargs="+",
-        default=None,
+        default="/home/zjp/fish-speech/reference/cj_long.MP3",
         help="Path to the audio file",
     )
     parser.add_argument(
@@ -49,7 +49,7 @@ def parse_args():
         "-rt",
         type=str,
         nargs="+",
-        default=None,
+        default="我在观察那个弹幕姬。好了好了，看完了。谢谢潇潇我大号的醒目留言，Thank You。然后今天晚上有个新的皮肤，就新的纸片人给大家看。我昨天还有今天早上测试了一下，还挺可爱的，不是挺可爱哦。超级，就超级可爱，谢谢kita得私的舰长，谢谢无尘的流石流石，大家中午好。",
         help="Reference text for voice synthesis",
     )
     parser.add_argument(

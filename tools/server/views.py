@@ -20,6 +20,7 @@ from loguru import logger
 from typing_extensions import Annotated
 
 from fish_speech.utils.schema import (
+    AudioExample,
     ServeTTSRequest,
     ServeVQGANDecodeRequest,
     ServeVQGANDecodeResponse,
@@ -99,6 +100,16 @@ async def tts(req: Annotated[ServeTTSRequest, Body(exclusive=True)]):
     model_manager: ModelManager = app_state.model_manager
     engine = model_manager.tts_inference_engine
     sample_rate = engine.decoder_model.sample_rate
+    
+    # If no references are provided and no reference_id is set, use the default reference
+    if not req.references and req.reference_id is None:
+        try:
+            # Use the default audio example from client
+            default_reference = AudioExample.load_from_path()
+            req.references = [default_reference]
+            logger.info("Using default reference audio and text")
+        except Exception as e:
+            logger.warning(f"Failed to load default reference: {e}")
 
     # Check if the text is too long
     if app_state.max_text_length > 0 and len(req.text) > app_state.max_text_length:

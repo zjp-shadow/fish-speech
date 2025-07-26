@@ -339,7 +339,6 @@ def init_model(checkpoint_path, device, precision, compile=False):
         logger.info("Compiling function...")
         decode_one_token = torch.compile(
             decode_one_token,
-            # mode="max-autotune-no-cudagraphs",
             backend="inductor" if torch.cuda.is_available() else "aot_eager",
             mode="reduce-overhead" if torch.cuda.is_available() else None,
             fullgraph=True,

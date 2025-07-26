@@ -2,6 +2,7 @@ import base64
 import os
 import queue
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 import torch
@@ -55,6 +56,39 @@ class ServeVQGANDecodeRequest(BaseModel):
 class ServeVQGANDecodeResponse(BaseModel):
     # The audio here should be in PCM float16 format
     audios: list[bytes]
+
+
+class AudioExample:
+    """
+    A class to represent an audio example with its text transcription.
+    This class handles loading audio from a file path and converting it to bytes.
+    
+    Default values match the client's defaults in api_client.py:
+    - audio_path: "/home/zjp/fish-speech/reference/cj_long.MP3"
+    - text: "我在观察那个弹幕姬。好了好了，看完了。谢谢潇潇我大号的醒目留言，Thank You。然后今天晚上有个新的皮肤，就新的纸片人给大家看。我昨天还有今天早上测试了一下，还挺可爱的，不是挺可爱哦。超级，就超级可爱，谢谢kita得私的舰长，谢谢无尘的流石流石，大家中午好。"
+    """
+    
+    DEFAULT_AUDIO_PATH = "/home/zjp/fish-speech/reference/cj_long.MP3"
+    DEFAULT_TEXT = "我在观察那个弹幕姬。好了好了，看完了。谢谢潇潇我大号的醒目留言，Thank You。然后今天晚上有个新的皮肤，就新的纸片人给大家看。我昨天还有今天早上测试了一下，还挺可爱的，不是挺可爱哦。超级，就超级可爱，谢谢kita得私的舰长，谢谢无尘的流石流石，大家中午好。"
+    
+    @classmethod
+    def load_from_path(cls, audio_path=DEFAULT_AUDIO_PATH, text=DEFAULT_TEXT):
+        """
+        Load audio from a file path and create a ServeReferenceAudio instance.
+        
+        Args:
+            audio_path: Path to the audio file
+            text: Text transcription of the audio
+            
+        Returns:
+            ServeReferenceAudio instance
+        """
+        try:
+            with open(audio_path, "rb") as f:
+                audio_bytes = f.read()
+            return ServeReferenceAudio(audio=audio_bytes, text=text)
+        except Exception as e:
+            raise ValueError(f"Failed to load audio from {audio_path}: {e}")
 
 
 class ServeReferenceAudio(BaseModel):
